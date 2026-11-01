@@ -93,10 +93,15 @@ Jika tampilan lama masih muncul: **Ctrl+Shift+R**.
 
 1. Buka situs → **Masuk Tim** → login `admin` → ganti password.
 2. **Kelola → Pengaturan**: ganti **nama usaha, alamat, nomor WhatsApp admin (format 62…), rekening bank**, dan unggah **logo**. (Data bawaan hanya contoh!)
-3. **Kelola → Paket & Harga**: sesuaikan paket dan harga asli.
+3. **Kelola → Jenis Acara & Pricelist**: ubah/tambah jenis acara (bawaan: Wedding, Engagement, Tedak Siten, Graduation) lalu **Unggah PDF** pricelist untuk masing-masing. Klien hanya memilih jenis acara; harga Anda tulis sendiri saat konfirmasi.
 4. **Kelola → Portofolio**: unggah foto (dikompres otomatis).
 5. **Kelola → Tim**: ubah data fotografer; isi username/password untuk akun login mereka.
-6. **Kelola → Testimoni**: hapus 3 testimoni contoh bila perlu.
+6. **Kelola → Akun**: tambah/ubah akun, atur status **Admin** atau **Fotografer**, reset password.
+7. **Kelola → Pengaturan → Foto Utama**: unggah foto halaman depan, atur zoom dan posisi.
+8. **Kelola → Testimoni**: hapus 3 testimoni contoh bila perlu.
+
+### Alur konfirmasi booking (baru)
+**Dashboard → Konfirmasi** pada booking baru → pilih **Fotografer 1 dan 2**, isi **Total harga** dan **DP** → Simpan. Sesi otomatis masuk kalender; bila fotografer bentrok, sistem memperingatkan. Pelunasan dicatat di **Keuangan → Catat Bayar**. Invoice (1 halaman, tanpa jatuh tempo) ada di tombol **Invoice**.
 
 ### Cara kerja hasil foto untuk client
 Setelah sesi selesai: siapkan folder di Google Drive → atur berbagi **“Siapa saja yang memiliki link”** → tempel link folder di **Dashboard → ikon ✏️ pada booking → “Link folder hasil foto”**. Client membuka **Portal Unduh Hasil Foto** dengan kode booking + nomor WhatsApp.
@@ -120,3 +125,22 @@ Setelah sesi selesai: siapkan folder di Google Drive → atur berbagi **“Siapa
 - Nomor invoice `INV-TAHUN-NNNN` dan kode booking `SANS-TAHUN-NNN` dibuat otomatis dan tidak ganda (dengan penguncian).
 - Sesi login berlaku maksimal 6 jam (batas CacheService), setelah itu login ulang.
 - Disarankan membuat salinan (File → Make a copy) spreadsheet database secara berkala.
+
+
+---
+
+## F. Memperbarui dari Versi Sebelumnya (revisi 1 Nov 2026)
+
+Data di Google Sheets Anda **tidak hilang**. Sheet baru (`JenisAcara`) dan kolom baru dibuat otomatis saat pertama kali aplikasi dibuka.
+
+**1. Backend (Apps Script)**
+1. Buka proyek Apps Script → ganti seluruh isi `Kode.gs` dengan `backend/Kode.gs` yang baru → **Simpan**.
+2. **Deploy → Manage deployments → ikon pensil → Version: New version → Deploy.** (URL `/exec` tetap sama.)
+
+**2. Frontend (GitHub Pages)**
+1. Ganti semua berkas di folder situs dengan isi ZIP ini, **kecuali `js/config.js`** (milik Anda, sudah berisi URL `/exec`).
+2. Di terminal: `git add .` → `git commit -m "Revisi"` → `git push`. Lalu **Ctrl+Shift+R** di browser.
+
+**Catatan data lama:** harga paket pada booking lama tetap terbaca sebagai total tagihan. Pembayaran lama otomatis dipetakan ke DP (bila belum lunas) atau pelunasan (bila lunas). Sheet `Paket` lama tidak dipakai lagi dan boleh dibiarkan.
+
+**Lupa password?** Fungsi `resetPassword()` sudah ada di bagian bawah `Kode.gs`: ubah `USERNAME` dan `PASSWORD_BARU`, pilih fungsinya di dropdown, klik **Jalankan**.

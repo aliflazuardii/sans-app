@@ -2,7 +2,7 @@
 /* ============================================================
    DASHBOARD ADMIN & MANAJEMEN BOOKING
    ============================================================ */
-const BK = { list: [], paket: [], page: 1, per: 8, f: { q: '', status: '', jenis: '', dari: '', sampai: '' } };
+const BK = { list: [], tim: [], page: 1, per: 8, f: { q: '', status: '', jenis: '', dari: '', sampai: '' } };
 let charts = {};
 let CAL = null;
 
@@ -27,14 +27,17 @@ function waReminderKlien(j) {
   const studio = S.pub?.config.nama_usaha || 'Sans Photo';
   return waLink(j.klien_wa, `Halo ${j.klien || ''}, mengingatkan jadwal sesi foto Anda bersama ${studio}: ${fmtTglPanjang(j.tanggal)}, pukul ${j.jam_mulai}–${j.jam_selesai}${j.lokasi ? ' di ' + j.lokasi : ''}. Sampai jumpa!`);
 }
-function waReminderFotografer(j) {
-  return waLink(j.fotografer_wa, `Halo ${j.fotografer}, pengingat tugas: ${j.judul}. ${fmtTglPanjang(j.tanggal)}, pukul ${j.jam_mulai}–${j.jam_selesai}${j.lokasi ? ', lokasi: ' + j.lokasi : ''}. Mohon siapkan peralatan. Terima kasih!`);
+/** n = 1 atau 2 (fotografer pertama/kedua pada sesi yang sama) */
+function waReminderFotografer(j, n = 1) {
+  const nama = n === 2 ? j.fotografer2 : (j.fotografer1 || j.fotografer), wa = n === 2 ? j.fotografer2_wa : j.fotografer_wa;
+  const rekan = n === 2 ? j.fotografer1 : j.fotografer2;
+  return waLink(wa, `Halo ${nama}, pengingat tugas: ${j.judul}. ${fmtTglPanjang(j.tanggal)}, pukul ${j.jam_mulai}–${j.jam_selesai}${j.lokasi ? ', lokasi: ' + j.lokasi : ''}.${rekan ? ' Rekan bertugas: ' + rekan + '.' : ''} Mohon siapkan peralatan. Terima kasih!`);
 }
 
 async function renderDashboard() {
   $('#app').innerHTML = skeletonPage();
-  const [d, list, paket] = await Promise.all([api('getDashboard'), api('listBookings'), api('list', { entity: 'paket' })]);
-  BK.list = list; BK.paket = paket; BK.page = 1; BK.dash = d;
+  const [d, list] = await Promise.all([api('getDashboard'), api('listBookings')]);
+  BK.list = list; BK.tim = d.tim_hari_ini; BK.page = 1; BK.dash = d;
   const delta = d.pemasukan_lalu > 0 ? Math.round((d.pemasukan - d.pemasukan_lalu) / d.pemasukan_lalu * 100) : null;
   const pctSesi = Math.min(100, Math.round(d.sesi_bulan_ini / d.target_sesi * 1000) / 10);
   const jenisList = [...new Set(list.map(b => b.jenis_acara))];
@@ -76,7 +79,7 @@ async function renderDashboard() {
           ${d.upcoming.length ? d.upcoming.slice(0, 3).map(j => `<div class="rem" style="margin-bottom:10px">
             <div class="row between"><b>${esc(j.judul)}</b><span class="badge b-amber">${esc(daysLabel(j.tanggal, d.today))}</span></div>
             <div class="muted" style="font-size:12px">${esc(fmtTgl(j.tanggal, true))} · ${esc(j.jam_mulai)}–${esc(j.jam_selesai)}${j.fotografer ? ' · ' + esc(j.fotografer) : ''}</div>
-            <div class="row">${j.klien_wa ? `<a class="btn btn-wa btn-sm" target="_blank" rel="noopener" href="${esc(waReminderKlien(j))}">${ic('wa')} Klien</a>` : ''}${j.fotografer_wa ? `<a class="btn btn-outline btn-sm" target="_blank" rel="noopener" href="${esc(waReminderFotografer(j))}">${ic('wa')} Fotografer</a>` : ''}</div></div>`).join('')
+            <div class="row">${j.klien_wa ? `<a class="btn btn-wa btn-sm" target="_blank" rel="noopener" href="${esc(waReminderKlien(j))}">${ic('wa')} Klien</a>` : ''}${j.fotografer_wa ? `<a class="btn btn-outline btn-sm" target="_blank" rel="noopener" href="${esc(waReminderFotografer(j, 1))}">${ic('wa')} ${esc((j.fotografer1 || 'Fotografer').split(' ')[0])}</a>` : ''}${j.fotografer2_wa ? `<a class="btn btn-outline btn-sm" target="_blank" rel="noopener" href="${esc(waReminderFotografer(j, 2))}">${ic('wa')} ${esc(j.fotografer2.split(' ')[0])}</a>` : ''}</div></div>`).join('')
       : `<div class="empty" style="padding:16px">${ic('calendar', 28)}<p>Belum ada jadwal mendatang.</p></div>`}
         </section>
         <section class="card"><div class="card-head"><h3>Kapasitas Tim Hari Ini</h3><span class="muted" style="font-size:12px">${d.tim_hari_ini.length} fotografer</span></div>
@@ -136,19 +139,19 @@ function renderBookingTable() {
   BK.page = Math.min(BK.page, pages);
   const rows = all.slice((BK.page - 1) * BK.per, BK.page * BK.per);
   $('#bk-total').textContent = `Total: ${BK.list.length} sesi`;
-  $('#bk-table').innerHTML = rows.length ? `<table class="tbl"><thead><tr><th>Kode</th><th>Klien & kontak</th><th>Paket acara</th><th>Jadwal & fotografer</th><th>Pembayaran</th><th>Status</th><th><span class="sr">Aksi</span></th></tr></thead><tbody>
-    ${rows.map(b => `<tr class="${b.status === 'Batal' ? 'strike' : ''}" style="${b.status === 'Batal' ? 'opacity:.65' : ''}">
+  $('#bk-table').innerHTML = rows.length ? `<table class="tbl"><thead><tr><th>Kode</th><th>Klien & kontak</th><th>Jenis acara</th><th>Jadwal & fotografer</th><th>Pembayaran</th><th>Status</th><th><span class="sr">Aksi</span></th></tr></thead><tbody>
+    ${rows.map(b => { const p = b.pembayaran; return `<tr class="${b.status === 'Batal' ? 'strike' : ''}" style="${b.status === 'Batal' ? 'opacity:.65' : ''}">
       <td data-label="Kode"><span class="mono" style="font-weight:700">${esc(b.kode_booking)}</span></td>
       <td data-label="Klien"><b>${esc(b.nama)}</b><span class="sub">${esc(fmtWa(b.whatsapp))}</span></td>
-      <td data-label="Paket">${esc(b.jenis_acara)}<span class="sub">${esc(b.nama_paket)} · ${rp(b.harga_paket)}</span></td>
-      <td data-label="Jadwal">${esc(fmtTgl(b.tanggal))}<span class="sub">${esc(b.jam)} WIB · ${b.durasi_jam} jam</span><span class="sub">${b.fotografer ? esc(b.fotografer) : 'Belum ditugaskan'}</span></td>
-      <td data-label="Bayar">${b.pembayaran ? badge(b.pembayaran.status) + `<span class="sub">Sisa ${rp(b.pembayaran.sisa)}</span>` : '-'}</td>
+      <td data-label="Acara"><b>${esc(b.jenis_acara)}</b><span class="sub">${p && p.total > 0 ? 'Total ' + rp(p.total) : 'Harga belum diisi'}</span></td>
+      <td data-label="Jadwal">${esc(fmtTgl(b.tanggal))}<span class="sub">${esc(b.jam)} WIB · ${b.durasi_jam} jam</span><span class="sub">${b.fotografer ? ic('camera') + ' ' + esc(b.fotografer) : '<i>Belum ditugaskan</i>'}</span></td>
+      <td data-label="Bayar">${p ? badge(p.status) + (p.total > 0 ? `<span class="sub">${p.dp > 0 ? 'DP ' + rp(p.dp) + ' · ' : ''}Sisa ${rp(p.sisa)}</span>` : '') : '-'}</td>
       <td data-label="Status">${badge(b.status)}</td>
       <td class="nolabel"><div class="acts">
-        ${b.status === 'Baru' ? `<button class="btn btn-accent btn-sm" data-confirm="${esc(b.id)}" title="Konfirmasi booking">${ic('check')} Konfirmasi</button>` : ''}
+        ${b.status === 'Baru' ? `<button class="btn btn-accent btn-sm" data-confirm="${esc(b.id)}" title="Konfirmasi: tentukan fotografer, harga, dan DP">${ic('check')} Konfirmasi</button>` : ''}
         <a class="btn btn-wa btn-icon" target="_blank" rel="noopener" href="${esc(waBooking(b))}" aria-label="Chat WhatsApp ${esc(b.nama)}">${ic('wa')}</a>
         <button class="btn btn-outline btn-icon" data-invoice="${esc(b.id)}" aria-label="Invoice ${esc(b.kode_booking)}">${ic('file')}</button>
-        <button class="btn btn-outline btn-icon" data-edit="${esc(b.id)}" aria-label="Ubah ${esc(b.kode_booking)}">${ic('edit')}</button></div></td></tr>`).join('')}
+        <button class="btn btn-outline btn-icon" data-edit="${esc(b.id)}" aria-label="Ubah ${esc(b.kode_booking)}">${ic('edit')}</button></div></td></tr>`; }).join('')}
     </tbody></table>` : `<div class="empty">${ic('search', 32)}<p>${BK.list.length ? 'Tidak ada booking yang cocok dengan filter.' : 'Belum ada booking. Bagikan link web Anda atau tambah booking manual.'}</p></div>`;
 
   $('#bk-pager').innerHTML = `<span>Menampilkan <b>${rows.length}</b> dari <b>${all.length}</b> reservasi</span>
@@ -156,38 +159,54 @@ function renderBookingTable() {
   $$('[data-pg]').forEach(b => b.addEventListener('click', () => { BK.page = Number(b.dataset.pg); renderBookingTable(); }));
   $$('[data-edit]').forEach(b => b.addEventListener('click', () => openBookingForm(BK.list.find(x => x.id === b.dataset.edit))));
   $$('[data-invoice]').forEach(b => b.addEventListener('click', () => showInvoice(b.dataset.invoice)));
-  $$('[data-confirm]').forEach(b => b.addEventListener('click', async () => {
-    try { await busy(b, () => api('saveBooking', { id: b.dataset.confirm, status: 'Dikonfirmasi' })); toast('Booking dikonfirmasi. Jadwal otomatis masuk ke kalender.', 'success'); renderDashboard(); }
-    catch (e) { toast(e.message, 'error'); }
-  }));
+  $$('[data-confirm]').forEach(b => b.addEventListener('click', () => openBookingForm(BK.list.find(x => x.id === b.dataset.confirm), { konfirmasi: true })));
 }
 
-function bookingFields() {
+function bookingFields(b) {
+  const acara = acaraNames();
+  if (b && b.jenis_acara && !acara.includes(b.jenis_acara)) acara.push(b.jenis_acara); // data lama tetap terbaca
   return [
     { name: 'nama', label: 'Nama klien', required: true },
     { name: 'whatsapp', label: 'WhatsApp', type: 'tel', required: true, placeholder: '08123456789' },
     { name: 'email', label: 'Email', type: 'email' },
-    { name: 'jenis_acara', label: 'Jenis acara', type: 'select', options: JENIS_ACARA },
+    { name: 'jenis_acara', label: 'Jenis acara', type: 'select', options: acara },
     { name: 'tanggal', label: 'Tanggal acara', type: 'date', required: true },
     { name: 'jam', label: 'Jam mulai', type: 'time' },
     { name: 'durasi_jam', label: 'Durasi (jam)', type: 'number', min: 1, step: 1 },
-    { name: 'id_paket', label: 'Paket', type: 'select', options: BK.paket.map(p => [p.id, `${p.nama_paket} — ${rp(p.harga)}`]) },
     { name: 'lokasi', label: 'Lokasi', full: true },
     { name: 'catatan', label: 'Catatan', type: 'textarea' },
+    { type: 'heading', label: 'Penugasan fotografer', hint: 'Pilih hingga 2 fotografer sekaligus. Sistem memperingatkan bila jadwal mereka bentrok.' },
+    { name: 'id_fotografer', label: 'Fotografer 1', type: 'select', options: [['', '— Belum ditugaskan —'], ...BK.tim.map(t => [t.id, t.nama])] },
+    { name: 'id_fotografer2', label: 'Fotografer 2 (opsional)', type: 'select', options: [['', '— Tidak ada —'], ...BK.tim.map(t => [t.id, t.nama])] },
+    { type: 'heading', label: 'Biaya', hint: 'Harga diisi manual sesuai kesepakatan dengan klien. Invoice mengikuti angka ini.' },
+    { name: 'total_tagihan', label: 'Total harga (Rp)', type: 'number', min: 0, step: 50000, placeholder: 'Mis. 5000000' },
+    { name: 'dp', label: 'DP diterima (Rp)', type: 'number', min: 0, step: 50000, placeholder: 'Kosongkan bila belum ada' },
+    { type: 'heading', label: 'Status & hasil foto' },
     { name: 'status', label: 'Status', type: 'select', options: STATUS_BOOKING },
     { name: 'link_hasil_foto', label: 'Link folder hasil foto (Google Drive)', type: 'url', placeholder: 'https://drive.google.com/…', hint: 'Tempel link folder (akses "siapa saja yang memiliki link"). Client membukanya lewat Portal Unduh.', full: true }
   ];
 }
 
-function openBookingForm(b) {
-  const edit = !!b;
+function openBookingForm(b, opt = {}) {
+  const edit = !!b, p = b && b.pembayaran;
+  const awal = { jenis_acara: acaraNames()[0] || '', tanggal: todayStr(), jam: '09:00', durasi_jam: 2, status: 'Dikonfirmasi' };
   const m = modalForm({
-    title: edit ? `Ubah Booking ${b.kode_booking}` : 'Tambah Booking Manual', wide: true,
-    fields: bookingFields(), values: edit ? b : { jenis_acara: 'Wedding', tanggal: todayStr(), jam: '09:00', durasi_jam: 2, status: 'Dikonfirmasi', id_paket: BK.paket[0]?.id },
+    title: opt.konfirmasi ? `Konfirmasi Booking ${b.kode_booking}` : edit ? `Ubah Booking ${b.kode_booking}` : 'Tambah Booking Manual', wide: true,
+    intro: opt.konfirmasi ? `Tentukan fotografer (hingga 2 orang), isi <b>total harga</b> yang disepakati, dan <b>DP</b> bila sudah diterima. Setelah disimpan, sesi otomatis masuk ke kalender.` : '',
+    submitLabel: opt.konfirmasi ? 'Konfirmasi & Simpan' : 'Simpan',
+    fields: bookingFields(b),
+    values: edit ? { ...b, status: opt.konfirmasi ? 'Dikonfirmasi' : b.status, total_tagihan: p && p.total ? p.total : '', dp: p && p.dp ? p.dp : '' } : awal,
     extra: edit ? `<div style="margin-top:14px"><button type="button" class="btn btn-ghost btn-sm" data-del style="color:var(--red)">${ic('trash')} Hapus booking ini</button></div>` : '',
     onSubmit: async v => {
-      await api('saveBooking', { ...v, id: edit ? b.id : undefined });
-      toast(edit ? 'Booking diperbarui.' : 'Booking ditambahkan.', 'success');
+      const kirim = force => api('saveBooking', { ...v, id: edit ? b.id : undefined, force });
+      try { await kirim(false); }
+      catch (e) {
+        if (e.code !== 'CONFLICT') throw e;
+        const daftar = (e.extra.conflicts || []).map(c => `• ${c.fotografer}: ${c.judul} (${c.jam_mulai}–${c.jam_selesai})`).join('\n');
+        if (!confirm(`⚠️ Fotografer bentrok dengan sesi lain:\n${daftar}\n\nTetap simpan?`)) throw new Error('Penyimpanan dibatalkan karena jadwal fotografer bentrok. Ganti fotografer atau jam sesi.');
+        await kirim(true);
+      }
+      toast(opt.konfirmasi ? 'Booking dikonfirmasi dan masuk kalender.' : edit ? 'Booking diperbarui.' : 'Booking ditambahkan.', 'success');
       if (currentPath() === '/dashboard') renderDashboard(); else if (currentPath() === '/keuangan') renderKeuangan();
     }
   });

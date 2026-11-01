@@ -54,6 +54,7 @@ const ICONS = {
   clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
   pin: '<path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
   copy: '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
   cloud: '<path d="M18 10h-1.3A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>', lock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>'
 };
 const ic = (n, size) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"${size ? ` style="font-size:${size}px"` : ''}>${ICONS[n] || ''}</svg>`;
@@ -142,6 +143,7 @@ function closeModal(silent) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { const bd = $('.modal-backdrop'); if (bd && bd.dataset.dismiss !== 'false') closeModal(); } });
 
 function fieldHTML(f, v) {
+  if (f.type === 'heading') return `<div class="full form-sep"><span class="cap">${esc(f.label)}</span>${f.hint ? `<span class="hint">${esc(f.hint)}</span>` : ''}</div>`;
   const id = 'f_' + f.name, val = v ?? f.value ?? '';
   const req = f.required ? ' required' : '';
   const hint = f.hint ? `<span class="hint">${esc(f.hint)}</span>` : '';
@@ -160,6 +162,7 @@ function fieldHTML(f, v) {
 
 /** Modal formulir generik. onSubmit(values) boleh melempar Error → ditampilkan di formulir */
 function modalForm({ title, fields, values = {}, submitLabel = 'Simpan', onSubmit, wide = false, dismiss = true, intro = '', extra = '' }) {
+  const inputs = fields.filter(f => f.type !== 'heading');
   const m = openModal(`
     <div class="modal-head"><h2>${esc(title)}</h2>${dismiss ? `<button class="btn btn-ghost btn-icon" data-close aria-label="Tutup">${ic('x')}</button>` : ''}</div>
     ${intro ? `<p class="muted" style="margin-bottom:14px">${intro}</p>` : ''}
@@ -171,10 +174,10 @@ function modalForm({ title, fields, values = {}, submitLabel = 'Simpan', onSubmi
   form.addEventListener('submit', async e => {
     e.preventDefault();
     errBox.hidden = true;
-    const bad = fields.find(f => f.required && !String(new FormData(form).get(f.name) || '').trim());
+    const bad = inputs.find(f => f.required && !String(new FormData(form).get(f.name) || '').trim());
     if (bad) { errBox.textContent = `"${bad.label}" wajib diisi.`; errBox.hidden = false; return; }
     const fd = new FormData(form), out = {};
-    fields.forEach(f => { out[f.name] = f.type === 'checkbox' ? (fd.get(f.name) ? 'ya' : 'tidak') : (fd.get(f.name) ?? ''); });
+    inputs.forEach(f => { out[f.name] = f.type === 'checkbox' ? (fd.get(f.name) ? 'ya' : 'tidak') : (fd.get(f.name) ?? ''); });
     const btn = $('[type=submit]', form);
     try { await busy(btn, () => onSubmit(out, form)); closeModal(true); }
     catch (err) { errBox.textContent = err.message; errBox.hidden = false; }
@@ -203,6 +206,16 @@ function downloadBlob(name, content, mime) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+
+/* ---------- Baca berkas apa adanya (mis. PDF) menjadi base64 ---------- */
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(String(fr.result).split(',')[1] || '');
+    fr.onerror = () => reject(new Error('Gagal membaca berkas: ' + file.name));
+    fr.readAsDataURL(file);
+  });
 }
 
 /* ---------- Kompres gambar di browser sebelum diunggah ---------- */
