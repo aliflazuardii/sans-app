@@ -94,7 +94,7 @@ async function renderEtalase(soft) {
       <div class="hero2-copy">
         <span class="eyebrow">${esc(c.tagline || 'Studio fotografi')}</span>
         <h1 id="h-hero">Abadikan Momen <span class="hl">Berharga</span> dengan Estetika Abadi.</h1>
-        <p class="lead">Fotografi profesional untuk pernikahan, lamaran, tradisi keluarga, dan wisuda. Pilih jenis acara, kirim booking, dan terima hasil foto lewat Google Drive.</p>
+        <p class="lead">Fotografi  untuk pernikahan, lamaran, tradisi keluarga, dan wisuda. Pilih jenis acara, kirim booking, dan terima hasil foto lewat Google Drive.</p>
         <div class="row hero2-cta">
           <button class="btn btn-hero" data-scroll="booking">Booking Sesi Foto ${ic('arrow')}</button>
           <button class="btn btn-hero-ghost" data-scroll="acara">Lihat Pricelist ${ic('arrow')}</button>
@@ -105,7 +105,7 @@ async function renderEtalase(soft) {
       <dl class="hero-stats">
         <div><dt>${acara.length || '—'}</dt><dd>Jenis acara</dd></div>
         <div><dt>${portofolio.length || '—'}</dt><dd>Karya pilihan</dd></div>
-        <div><dt>1 hari</dt><dd>Respons admin</dd></div>
+       
       </dl>
       ${slides.length > 1 ? `<div class="hero2-dots" role="group" aria-label="Ganti foto latar">${slides.map((_, i) => `<button data-hs="${i}" aria-label="Foto ${i + 1}" aria-current="${i === 0}"></button>`).join('')}</div>` : ''}
     </div>
