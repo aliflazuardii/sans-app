@@ -449,3 +449,117 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
   .invoice .inv-no { font-size: 19px; }
   .invoice, .invoice * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+
+/* ============================================================
+   BERANDA v3 — hero layar penuh, strip keunggulan, band testimoni
+   ============================================================ */
+:root { --bronze: #4F46E5; --bronze-hover: #4338CA; --bronze-lt: #A5B4FC; --ink: #0E1220; }
+
+/* Header transparan di atas hero */
+body.home .topbar { position: fixed; left: 0; right: 0; transition: background .25s, border-color .25s, color .25s; }
+body.home:not(.scrolled) .topbar { background: linear-gradient(rgba(8,7,6,.6), rgba(8,7,6,0)); border-bottom-color: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; color: #fff; }
+body.home:not(.scrolled) .brand small { color: rgba(255,255,255,.72); }
+body.home:not(.scrolled) .brand-mark { background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.35); color: #fff; }
+body.home:not(.scrolled) .nav { background: transparent; }
+body.home:not(.scrolled) .nav a { color: rgba(255,255,255,.85); }
+body.home:not(.scrolled) .nav a:hover { color: #fff; }
+body.home:not(.scrolled) .nav a[aria-current="page"] { background: transparent; color: #fff; border-radius: 0; box-shadow: inset 0 -2px 0 var(--bronze-lt); }
+body.home:not(.scrolled) .btn-ghost { color: #fff; }
+body.home:not(.scrolled) .btn-ghost:hover { background: rgba(255,255,255,.12); }
+body.home:not(.scrolled) .btn-primary { background: transparent; color: #fff; border-color: rgba(255,255,255,.65); }
+body.home:not(.scrolled) .btn-primary:hover { background: rgba(255,255,255,.14); }
+body.home .footer { margin-top: 0; }
+
+/* Hero */
+.hero2 { position: relative; isolation: isolate; min-height: clamp(620px, 92svh, 840px); display: flex; flex-direction: column; color: #fff; background: var(--ink); overflow: hidden; }
+.hero2-slides { position: absolute; inset: 0; z-index: -2; }
+.hs { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.3s ease; }
+.hs.on { opacity: 1; }
+.hs-ph { position: absolute; inset: 0; display: grid; place-items: center; font-size: 72px; color: rgba(255,255,255,.2); background: radial-gradient(circle at 70% 40%, #25305a, var(--ink) 70%); }
+.hero2-shade { position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(180deg, rgba(8,7,6,.55) 0%, rgba(8,7,6,0) 24%), linear-gradient(0deg, rgba(8,7,6,.8) 0%, rgba(8,7,6,0) 42%), linear-gradient(90deg, rgba(8,7,6,.82) 0%, rgba(8,7,6,.55) 50%, rgba(8,7,6,.2) 100%); }
+.hero2-in { flex: 1; display: flex; align-items: center; width: 100%; padding-top: 150px; padding-bottom: 36px; }
+.hero2-copy { max-width: 620px; }
+.hero2 .eyebrow { color: var(--bronze-lt); }
+.hero2 h1 { font: 400 clamp(36px, 6.4vw, 66px)/1.08 var(--serif); letter-spacing: -.02em; margin: 16px 0 0; text-wrap: balance; }
+.hl { color: var(--bronze-lt); font-style: normal; }
+.hero2 .lead { color: rgba(255,255,255,.84); font-size: 16px; line-height: 27px; margin: 20px 0 28px; max-width: 500px; }
+.hero2-cta { gap: 12px; }
+.btn-hero { background: var(--bronze); color: #fff; border-color: var(--bronze); }
+.btn-hero:hover { background: var(--bronze-hover); }
+.btn-hero-ghost { background: rgba(255,255,255,.06); color: #fff; border-color: rgba(255,255,255,.6); backdrop-filter: blur(4px); }
+.btn-hero-ghost:hover { background: rgba(255,255,255,.16); }
+.btn-hero:focus-visible, .btn-hero-ghost:focus-visible { outline-color: #fff; }
+.hero2-foot { width: 100%; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-bottom: 26px; }
+.hero2 .hero-stats { margin: 0; flex: 1; min-width: 250px; max-width: 520px; gap: 34px; border-top-color: rgba(255,255,255,.22); }
+.hero2 .hero-stats dt { color: #fff; }
+.hero2 .hero-stats dd { color: rgba(255,255,255,.72); }
+.hero2-dots { display: flex; align-items: center; gap: 0; }
+.hero2-dots button { width: 26px; height: 32px; border: 0; background: none; padding: 0; display: grid; place-items: center; }
+.hero2-dots button::before { content: ''; width: 8px; height: 8px; border-radius: 99px; background: rgba(255,255,255,.45); transition: width .3s, background .3s; }
+.hero2-dots button[aria-current="true"]::before { width: 22px; background: var(--bronze-lt); }
+.hero2-dots button:focus-visible { outline: 2px solid #fff; outline-offset: -2px; border-radius: 8px; }
+@media (max-width: 640px) {
+  .hero2 { min-height: 640px; }
+  .hero2-in { padding-top: 160px; }
+  .hero2-shade { background: linear-gradient(180deg, rgba(8,7,6,.6) 0%, rgba(8,7,6,.4) 30%, rgba(8,7,6,.82) 100%); }
+  .hero2 .hero-stats { gap: 22px; }
+}
+
+/* Strip keunggulan */
+.strip { background: var(--card); border-bottom: 1px solid var(--line); }
+.strip-in { display: grid; grid-template-columns: 1fr; }
+.strip-i { display: flex; gap: 14px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.strip-i:last-child { border-bottom: 0; }
+.strip-i .ic { width: 40px; flex: none; display: grid; place-items: center; font-size: 26px; color: var(--accent); }
+.strip-i b { display: block; font-size: 13px; }
+.strip-i div > span { font-size: 12px; color: var(--text3); line-height: 18px; display: block; }
+@media (min-width: 640px) { .strip-in { grid-template-columns: repeat(2, 1fr); column-gap: 24px; } .strip-i:nth-last-child(2) { border-bottom: 0; } }
+@media (min-width: 1000px) {
+  .strip-in { grid-template-columns: repeat(4, 1fr); column-gap: 0; }
+  .strip-i { border-bottom: 0; border-left: 1px solid var(--line); padding: 26px 22px; }
+  .strip-i:first-child { border-left: 0; padding-left: 0; }
+}
+
+/* Band testimoni + tentang */
+.band { background: var(--ink); color: #fff; margin-top: 56px; }
+.band-in { display: grid; gap: 48px; padding-block: 64px; }
+@media (min-width: 900px) { .band-in { grid-template-columns: 1fr 1fr; gap: 0; } .band-testi { padding-right: 56px; border-right: 1px solid rgba(255,255,255,.12); } .band-about { padding-left: 56px; } }
+.band .eyebrow { color: var(--bronze-lt); }
+.band .btn:focus-visible, .band a:focus-visible { outline-color: #fff; }
+.tq { display: grid; margin-top: 18px; }
+.tq-i { grid-area: 1 / 1; opacity: 0; visibility: hidden; transition: opacity .6s ease, visibility .6s; }
+.tq-i.on { opacity: 1; visibility: visible; }
+.tq-mark { display: block; font: 400 72px/44px var(--serif); color: var(--bronze-lt); opacity: .65; height: 34px; }
+.tq blockquote { margin: 14px 0 18px; font: 400 clamp(18px, 2.2vw, 22px)/1.6 var(--serif); color: rgba(255,255,255,.93); }
+.tq .stars { color: #FBBF24; }
+.tq figcaption { margin-top: 16px; }
+.tq figcaption b { display: block; font-size: 14px; }
+.tq figcaption span { font-size: 12px; color: rgba(255,255,255,.62); }
+.tq-dots { margin: 16px 0 22px; }
+.tq-empty { color: rgba(255,255,255,.78); margin: 18px 0 22px; font-size: 16px; line-height: 26px; max-width: 420px; }
+.band-about h2 { font: 400 clamp(28px, 4vw, 40px)/1.15 var(--serif); letter-spacing: -.015em; margin: 14px 0; text-wrap: balance; }
+.band-about > p { color: rgba(255,255,255,.8); max-width: 480px; line-height: 26px; margin-bottom: 18px; }
+.band-info { list-style: none; padding: 0; margin: 0 0 24px; display: grid; gap: 10px; color: rgba(255,255,255,.8); font-size: 13px; }
+.band-info li { display: flex; gap: 10px; align-items: flex-start; }
+.band-info .i { color: var(--bronze-lt); flex: none; margin-top: 2px; }
+
+/* Pratinjau foto latar (admin) */
+.hero-prev2 { position: relative; aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; background: var(--ink); }
+.hero-prev2 img { width: 100%; height: 100%; object-fit: cover; }
+.hero-prev2 .hs-ph { font-size: 40px; }
+.hs-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; margin-top: 10px; }
+.hs-list figure { position: relative; margin: 0; aspect-ratio: 4/3; border-radius: 10px; overflow: hidden; background: var(--muted); border: 1px solid var(--line); }
+.hs-list img { width: 100%; height: 100%; object-fit: cover; }
+.hs-list figcaption { position: absolute; left: 6px; bottom: 5px; font-size: 10px; font-weight: 700; color: #fff; background: rgba(0,0,0,.55); border-radius: 6px; padding: 0 6px; }
+.hs-del { position: absolute; top: 4px; right: 4px; width: 28px; height: 28px; border-radius: 50%; border: 0; background: rgba(0,0,0,.65); color: #fff; display: grid; place-items: center; padding: 0; }
+.hs-del:hover { background: var(--red); }
+
+@media (prefers-reduced-motion: reduce) { .hs, .tq-i, .hero2-dots button::before { transition: none; } }
+
+/* Margin lebih lega di beranda (selaras referensi) */
+body.home .wrap, body.home .topbar-in { padding-inline: clamp(16px, 5vw, 64px); }
+body.home .wrap { max-width: 1360px; }
+body.home .topbar-in { max-width: 1360px; }
+@media (max-width: 640px) { .hero2 .hero-stats { flex-wrap: nowrap; gap: 20px; min-width: 0; } .hero2 .hero-stats dt { font-size: 22px; line-height: 28px; } .hero2 .hero-stats dd { font-size: 11px; } }

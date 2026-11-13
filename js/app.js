@@ -41,12 +41,15 @@ function renderChrome() {
   $('#footer').innerHTML = `<div class="footer-in"><span>© ${new Date().getFullYear()} ${esc(nama)}. Seluruh hak cipta dilindungi.</span><span>Sistem Manajemen Operasional & Reservasi Digital</span></div>`;
 }
 
+const syncScrolled = () => document.body.classList.toggle('scrolled', window.scrollY > 40);
+
 async function route() {
   let path = currentPath();
   const r = ROUTES[path];
   if (!r) { location.hash = '#/etalase'; return; }
   if (r.roles && (!S.user || !r.roles.includes(S.user.role))) { toast(S.user ? 'Anda tidak memiliki akses ke halaman itu.' : 'Silakan masuk terlebih dahulu.', 'error'); location.hash = S.user ? '#/etalase' : '#/masuk'; return; }
   killCharts(); closeModal(true);
+  document.body.classList.toggle('home', path === '/etalase'); syncScrolled();
   renderChrome();
   window.scrollTo(0, 0);
   try { await r.render(); }
@@ -72,6 +75,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadSession();
   $('#btn-theme').addEventListener('click', toggleTheme);
   window.addEventListener('hashchange', route);
+  window.addEventListener('scroll', syncScrolled, { passive: true });
   renderChrome();
   try { await loadPublic(); renderChrome(); } catch (e) { /* ditangani halaman etalase */ }
   route();

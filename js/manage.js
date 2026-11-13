@@ -234,7 +234,8 @@ async function tabPengaturan() {
   MG.cfg = await api('getConfig');
   const c = MG.cfg, logo = safeUrl(c.logo_url);
   const heroFb = (S.pub?.portofolio || []).find(x => safeUrl(x.url_tampil));
-  const heroSrc = safeUrl(c.hero_url) || (heroFb ? heroFb.url_tampil : '');
+  const slides = (Array.isArray(c.hero_slides) ? c.hero_slides : []).map(safeUrl).filter(Boolean);
+  const heroSrc = slides[0] || (heroFb ? heroFb.url_tampil : '');
   const sc = Number(c.hero_scale) || 100, px = c.hero_posx === '' ? 50 : Number(c.hero_posx), py = c.hero_posy === '' ? 50 : Number(c.hero_posy);
   $('#mg-body').innerHTML = `<div class="grid g2" style="align-items:start">
     <form class="card" id="cfg-form" novalidate><div class="card-head"><h2>Profil & Rekening Usaha</h2></div>
@@ -246,20 +247,20 @@ async function tabPengaturan() {
       <section class="card"><div class="card-head"><h3>Logo</h3></div>
         <div class="row">${logo ? `<img src="${esc(logo)}" alt="Logo saat ini" referrerpolicy="no-referrer" style="height:64px;border-radius:10px">` : '<span class="muted">Belum ada logo.</span>'}
           <input type="file" id="logo-file" accept="image/jpeg,image/png,image/webp" hidden><button class="btn btn-outline" id="logo-btn">${ic('upload')} Unggah Logo</button></div></section>
-      <section class="card" id="hero-card"><div class="card-head"><h3>Foto Utama Halaman Depan</h3></div>
-        <p class="muted" style="margin-bottom:12px">Atur zoom dan titik fokus agar bagian terbaik foto tampil di bingkai. Pratinjau di bawah sama dengan tampilan di etalase.</p>
-        <div class="hero-edit">
-          <div class="hero-prev"><div class="hero-art">${heroSrc ? `<img id="hp-img" src="${esc(heroSrc)}" alt="Pratinjau foto utama" referrerpolicy="no-referrer" style="${heroImgStyle(sc, px, py)}">` : ic('camera')}</div></div>
-          <div class="stack" style="--gap:12px">
-            <div class="field"><label for="hp-sc">Zoom: <b id="hp-sc-v">${sc}%</b></label><input type="range" id="hp-sc" min="100" max="250" step="5" value="${sc}"></div>
-            <div class="field"><label for="hp-x">Posisi horizontal: <b id="hp-x-v">${px}%</b></label><input type="range" id="hp-x" min="0" max="100" step="1" value="${px}"></div>
-            <div class="field"><label for="hp-y">Posisi vertikal: <b id="hp-y-v">${py}%</b></label><input type="range" id="hp-y" min="0" max="100" step="1" value="${py}"></div>
-            ${c.hero_url ? '' : '<p class="muted" style="font-size:12px">Belum ada foto utama khusus: etalase memakai foto pertama portofolio.</p>'}
-            <input type="file" id="hero-file" accept="image/jpeg,image/png,image/webp" hidden>
-            <div class="row"><button class="btn btn-outline btn-sm" id="hero-up">${ic('upload')} ${c.hero_url ? 'Ganti Foto' : 'Unggah Foto'}</button>
-              ${c.hero_url ? `<button class="btn btn-ghost btn-sm" id="hero-del" style="color:var(--red)">${ic('trash')} Hapus</button>` : ''}
-              <button class="btn btn-ghost btn-sm" id="hero-reset">Atur ulang</button><span style="flex:1"></span><button class="btn btn-primary btn-sm" id="hero-save">Simpan</button></div>
-          </div></div></section>
+      <section class="card" id="hero-card"><div class="card-head"><h3>Foto Latar Halaman Depan</h3><span class="badge b-gray"><i></i>${slides.length}/8 foto</span></div>
+        <p class="muted" style="margin-bottom:12px">Tambahkan hingga 8 foto. Jika lebih dari satu, foto berganti otomatis di halaman depan. Foto pertama tampil lebih dulu. Gunakan foto lanskap (landscape) beresolusi tinggi.</p>
+        <div class="hero-prev2">${heroSrc ? `<img id="hp-img" src="${esc(heroSrc)}" alt="Pratinjau foto latar" referrerpolicy="no-referrer" style="${heroImgStyle(sc, px, py)}">` : `<div class="hs-ph">${ic('camera')}</div>`}</div>
+        ${slides.length ? `<div class="hs-list">${slides.map((u, i) => `<figure><img src="${esc(u)}" alt="Foto latar ${i + 1}" referrerpolicy="no-referrer" loading="lazy"><figcaption>${i + 1}</figcaption><button class="hs-del" data-hdel="${i}" aria-label="Hapus foto latar ${i + 1}">${ic('x', 14)}</button></figure>`).join('')}</div>`
+          : '<p class="muted" style="font-size:12px;margin:10px 0 0">Belum ada foto latar khusus: halaman depan memakai foto-foto portofolio.</p>'}
+        <input type="file" id="hero-file" accept="image/jpeg,image/png,image/webp" multiple hidden>
+        <div class="row" style="margin:12px 0 4px"><button class="btn btn-outline btn-sm" id="hero-up" ${slides.length >= 8 ? 'disabled' : ''}>${ic('upload')} Tambah Foto</button></div>
+        <div class="stack" style="--gap:12px;margin-top:14px">
+          <div class="field"><label for="hp-sc">Zoom: <b id="hp-sc-v">${sc}%</b></label><input type="range" id="hp-sc" min="100" max="250" step="5" value="${sc}"></div>
+          <div class="field"><label for="hp-x">Posisi horizontal: <b id="hp-x-v">${px}%</b></label><input type="range" id="hp-x" min="0" max="100" step="1" value="${px}"></div>
+          <div class="field"><label for="hp-y">Posisi vertikal: <b id="hp-y-v">${py}%</b></label><input type="range" id="hp-y" min="0" max="100" step="1" value="${py}"></div>
+          <p class="muted" style="font-size:12px">Zoom dan posisi berlaku untuk semua foto latar.</p>
+          <div class="row"><button class="btn btn-ghost btn-sm" id="hero-reset">Atur ulang</button><span style="flex:1"></span><button class="btn btn-primary btn-sm" id="hero-save">Simpan</button></div>
+        </div></section>
       <section class="card"><div class="card-head"><h3>Keamanan</h3></div><p class="muted" style="margin-bottom:12px">Ganti password akun yang sedang digunakan (${esc(S.user.username)}).</p><button class="btn btn-outline" id="pw-btn">${ic('lock')} Ganti Password</button></section>
     </div></div>`;
   $('#cfg-form').addEventListener('submit', async e => {
@@ -292,15 +293,25 @@ async function tabPengaturan() {
   const hf = $('#hero-file');
   $('#hero-up').addEventListener('click', () => hf.click());
   hf.addEventListener('change', async () => {
-    if (!hf.files[0]) return;
-    try { const img = await compressImage(hf.files[0], 1800, 0.86); await api('uploadHero', { base64: img.base64, mime: img.mime }); toast('Foto utama diunggah. Atur zoom lalu simpan.', 'success'); await loadPublic(true).catch(() => {}); await tabPengaturan(); }
-    catch (e) { toast(e.message, 'error'); }
+    const files = [...hf.files].slice(0, Math.max(0, 8 - slides.length));
+    if (!files.length) return;
+    const btn = $('#hero-up');
+    try {
+      btn.disabled = true;
+      for (let k = 0; k < files.length; k++) {
+        btn.textContent = `Mengunggah ${k + 1}/${files.length}…`;
+        const img = await compressImage(files[k], 1920, 0.85);
+        await api('addHeroSlide', { base64: img.base64, mime: img.mime });
+      }
+      toast(files.length > 1 ? 'Foto latar ditambahkan.' : 'Foto latar ditambahkan.', 'success');
+    } catch (e) { toast(e.message, 'error'); }
     hf.value = '';
+    await loadPublic(true).catch(() => {}); await tabPengaturan();
   });
-  $('#hero-del')?.addEventListener('click', async () => {
-    if (!await confirmBox('Hapus foto utama? Etalase akan memakai foto pertama portofolio.', { danger: true, okLabel: 'Hapus' })) return;
-    try { await api('clearHero'); toast('Foto utama dihapus.', 'success'); await loadPublic(true).catch(() => {}); await tabPengaturan(); } catch (e) { toast(e.message, 'error'); }
-  });
+  $$('[data-hdel]').forEach(b => b.addEventListener('click', async () => {
+    if (!await confirmBox('Hapus foto latar ini?', { danger: true, okLabel: 'Hapus' })) return;
+    try { await api('removeHeroSlide', { index: Number(b.dataset.hdel) }); toast('Foto latar dihapus.', 'success'); await loadPublic(true).catch(() => {}); await tabPengaturan(); } catch (e) { toast(e.message, 'error'); }
+  }));
   $('#pw-btn').addEventListener('click', () => modalForm({
     title: 'Ganti Password', submitLabel: 'Simpan',
     fields: [{ name: 'lama', label: 'Password saat ini', type: 'password', required: true, autocomplete: 'current-password', full: true }, { name: 'baru', label: 'Password baru (min. 8 karakter)', type: 'password', required: true, autocomplete: 'new-password', full: true }],

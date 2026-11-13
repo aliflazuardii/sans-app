@@ -10,6 +10,8 @@ async function loadPublic(force) {
     if (S.pub && !Array.isArray(S.pub.acara)) S.pub = null; // cache versi lama (masih berisi paket)
   }
   const fresh = apiPublic().then(p => {
+    if (!p || !Array.isArray(p.acara)) throw new Error('Backend (Apps Script) masih versi lama. Tempel Kode.gs terbaru lalu Deploy → Manage deployments → Edit → New version → Deploy.');
+    p.portofolio = p.portofolio || []; p.testimoni = p.testimoni || []; p.config = p.config || {};
     const changed = JSON.stringify(p) !== JSON.stringify(S.pub);
     S.pub = p;
     try { localStorage.setItem('sp_pub', JSON.stringify(p)); } catch (e) { /* abaikan */ }
@@ -29,7 +31,42 @@ function heroImgStyle(scale, x, y) {
   return `transform:scale(${sc});transform-origin:${px}% ${py}%;object-position:${px}% ${py}%`;
 }
 
+/** Daftar foto latar hero: slideshow admin; bila kosong pakai foto-foto portofolio. */
+function heroSlides(c, porto) {
+  let l = Array.isArray(c.hero_slides) ? c.hero_slides.map(safeUrl).filter(Boolean) : [];
+  if (!l.length && safeUrl(c.hero_url)) l = [safeUrl(c.hero_url)];
+  if (!l.length) l = (porto || []).map(p => safeUrl(p.url_tampil)).filter(Boolean).slice(0, 3);
+  return l;
+}
+
+let heroTimers = [];
+/** Rotasi otomatis (foto hero & testimoni). Berhenti saat halaman diganti, kursor di atasnya, atau pengguna memilih gerak minimal. */
+function startRotator(rootSel, itemSel, dotSel, ms) {
+  const root = $(rootSel); if (!root) return;
+  const items = $$(itemSel, root.closest('section') || root), dots = $$(dotSel, root.closest('section') || root);
+  if (items.length < 2) return;
+  let i = 0, paused = false;
+  const go = n => {
+    i = (n + items.length) % items.length;
+    items.forEach((el, k) => el.classList.toggle('on', k === i));
+    dots.forEach((d, k) => d.setAttribute('aria-current', String(k === i)));
+  };
+  dots.forEach((d, k) => d.addEventListener('click', () => go(k)));
+  const sec = root.closest('section') || root;
+  sec.addEventListener('mouseenter', () => { paused = true; });
+  sec.addEventListener('mouseleave', () => { paused = false; });
+  sec.addEventListener('focusin', () => { paused = true; });
+  sec.addEventListener('focusout', () => { paused = false; });
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const t = setInterval(() => {
+    if (!document.body.contains(root)) { clearInterval(t); return; }
+    if (!paused && !document.hidden) go(i + 1);
+  }, ms);
+  heroTimers.push(t);
+}
+
 async function renderEtalase(soft) {
+  heroTimers.forEach(clearInterval); heroTimers = [];
   const app = $('#app');
   const y = window.scrollY;
   if (!S.pub) {
@@ -44,39 +81,46 @@ async function renderEtalase(soft) {
   const draft = (() => { try { return JSON.parse(localStorage.getItem('sp_draft') || '{}'); } catch (e) { return {}; } })();
   const marquee = acara.length ? [...acara, ...acara].map(a => `<span>${esc(a.nama)}</span>`).join('<i aria-hidden="true">✦</i>') : '';
 
+  const slides = heroSlides(c, portofolio);
+  const wa = c.nomor_wa_admin ? waLink(c.nomor_wa_admin, `Halo ${c.nama_usaha}, saya ingin bertanya tentang sesi foto.`) : '';
+
   app.innerHTML = `
-  <div class="wrap">
-    <section class="hero" aria-labelledby="h-hero">
-      <div class="hero-copy">
-        <span class="eyebrow">${esc(c.tagline || 'Studio fotografi')}</span>
-        <h1 id="h-hero">Abadikan Momen <em>Berharga</em> dengan Estetika Abadi.</h1>
-        <p class="lead">Dari pernikahan hingga tradisi keluarga. Pilih jenis acara Anda, kirim booking, dan terima hasil foto lewat Google Drive.</p>
-        <div class="row">
-          <button class="btn btn-primary" data-scroll="booking">Booking Sesi Foto ${ic('arrow')}</button>
-          <button class="btn btn-outline" data-scroll="acara">Lihat Pricelist</button>
-        </div>
-        <dl class="hero-stats">
-          <div><dt>${acara.length || '—'}</dt><dd>Jenis acara</dd></div>
-          <div><dt>${portofolio.length || '—'}</dt><dd>Karya pilihan</dd></div>
-          <div><dt>1 hari</dt><dd>Respons admin</dd></div>
-        </dl>
-      </div>
-      <div class="hero-art-wrap">
-        <div class="hero-art">${heroSrc ? `<img src="${esc(heroSrc)}" alt="Foto utama ${esc(c.nama_usaha)}" referrerpolicy="no-referrer" style="${heroImgStyle(c.hero_scale, c.hero_posx, c.hero_posy)}" fetchpriority="high">` : ic('camera')}</div>
-        <span class="hero-ring" aria-hidden="true"></span>
-        <div class="hero-tag"><span class="cap">${esc(c.nama_usaha)}</span><div class="serif" style="font-size:15px">Studio Fotografi</div></div>
-      </div>
-    </section>
-
-    ${marquee ? `<div class="marquee" aria-label="Jenis acara yang kami layani"><div class="marquee-track">${marquee}</div></div>` : ''}
-
-    <div class="chips" aria-label="Keunggulan">
-      <div class="chip"><span class="ic">${ic('calendar')}</span><div><b>Booking Online</b><span>Pilih tanggal sendiri</span></div></div>
-      <div class="chip"><span class="ic">${ic('wa')}</span><div><b>Konfirmasi WhatsApp</b><span>Respons cepat</span></div></div>
-      <div class="chip"><span class="ic">${ic('cloud')}</span><div><b>Hasil via Google Drive</b><span>Unduh kapan saja</span></div></div>
-      <div class="chip"><span class="ic">${ic('file')}</span><div><b>Invoice Resmi</b><span>Transparan & rapi</span></div></div>
+  <section class="hero2" id="hero2" aria-labelledby="h-hero" aria-roledescription="carousel">
+    <div class="hero2-slides" aria-hidden="true">
+      ${slides.length ? slides.map((u, i) => `<img class="hs${i === 0 ? ' on' : ''}" src="${esc(u)}" alt="" referrerpolicy="no-referrer" ${i ? 'loading="lazy"' : 'fetchpriority="high"'} style="${heroImgStyle(c.hero_scale, c.hero_posx, c.hero_posy)}">`).join('') : `<div class="hs-ph">${ic('camera')}</div>`}
     </div>
+    <div class="hero2-shade" aria-hidden="true"></div>
+    <div class="wrap hero2-in">
+      <div class="hero2-copy">
+        <span class="eyebrow">${esc(c.tagline || 'Studio fotografi')}</span>
+        <h1 id="h-hero">Abadikan Momen <span class="hl">Berharga</span> dengan Estetika Abadi.</h1>
+        <p class="lead">Fotografi profesional untuk pernikahan, lamaran, tradisi keluarga, dan wisuda. Pilih jenis acara, kirim booking, dan terima hasil foto lewat Google Drive.</p>
+        <div class="row hero2-cta">
+          <button class="btn btn-hero" data-scroll="booking">Booking Sesi Foto ${ic('arrow')}</button>
+          <button class="btn btn-hero-ghost" data-scroll="acara">Lihat Pricelist ${ic('arrow')}</button>
+        </div>
+      </div>
+    </div>
+    <div class="wrap hero2-foot">
+      <dl class="hero-stats">
+        <div><dt>${acara.length || '—'}</dt><dd>Jenis acara</dd></div>
+        <div><dt>${portofolio.length || '—'}</dt><dd>Karya pilihan</dd></div>
+        <div><dt>1 hari</dt><dd>Respons admin</dd></div>
+      </dl>
+      ${slides.length > 1 ? `<div class="hero2-dots" role="group" aria-label="Ganti foto latar">${slides.map((_, i) => `<button data-hs="${i}" aria-label="Foto ${i + 1}" aria-current="${i === 0}"></button>`).join('')}</div>` : ''}
+    </div>
+  </section>
 
+  <div class="strip" aria-label="Keunggulan">
+    <div class="wrap strip-in">
+      <div class="strip-i"><span class="ic">${ic('calendar')}</span><div><b>Booking Online</b><span>Pilih tanggal dan jenis acara sendiri.</span></div></div>
+      <div class="strip-i"><span class="ic">${ic('wa')}</span><div><b>Konfirmasi WhatsApp</b><span>Respons cepat dari admin kami.</span></div></div>
+      <div class="strip-i"><span class="ic">${ic('cloud')}</span><div><b>Hasil via Google Drive</b><span>Unduh foto kapan saja, di mana saja.</span></div></div>
+      <div class="strip-i"><span class="ic">${ic('file')}</span><div><b>Invoice Resmi</b><span>Biaya transparan dan rapi.</span></div></div>
+    </div>
+  </div>
+
+  <div class="wrap">
     <section class="section" id="acara" aria-labelledby="h-acara">
       <div class="sec-head"><span class="eyebrow center">Jenis acara & pricelist</span><h2 id="h-acara">Pilih Acara Anda</h2><p>Unduh pricelist (PDF) untuk melihat detail layanan. Biaya final disampaikan admin saat konfirmasi booking, sesuai kebutuhan acara Anda.</p></div>
       <div class="acara-grid">
@@ -129,18 +173,35 @@ async function renderEtalase(soft) {
       </div>
     </section>
 
-    <section class="section" id="testimoni" aria-labelledby="h-testi">
-      <div class="sec-head"><span class="eyebrow center">Cerita mereka</span><h2 id="h-testi">Pengalaman Klien Bersama ${esc(c.nama_usaha)}</h2></div>
-      <div class="grid g3">
-        ${testimoni.length ? testimoni.slice(0, 6).map(t => `<figure class="card quote" style="margin:0">${stars(t.rating)}<p>${esc(t.isi)}</p><figcaption><b>${esc(t.nama)}</b></figcaption></figure>`).join('')
-      : `<div class="card empty" style="grid-column:1/-1">${ic('star', 32)}<p>Jadilah yang pertama memberi testimoni.</p></div>`}
+  </div>
+
+  <section class="band" id="testimoni" aria-labelledby="h-testi">
+    <div class="wrap band-in">
+      <div class="band-testi">
+        <span class="eyebrow">Cerita klien</span>
+        <h2 id="h-testi" class="sr">Pengalaman klien bersama ${esc(c.nama_usaha)}</h2>
+        ${testimoni.length ? `<div class="tq" aria-live="off">${testimoni.slice(0, 6).map((t, i) => `<figure class="tq-i${i === 0 ? ' on' : ''}" style="margin:0"><span class="tq-mark" aria-hidden="true">“</span><blockquote>${esc(t.isi)}</blockquote>${stars(t.rating)}<figcaption><b>${esc(t.nama)}</b><span>Klien ${esc(c.nama_usaha)}</span></figcaption></figure>`).join('')}</div>
+          ${testimoni.length > 1 ? `<div class="hero2-dots tq-dots" role="group" aria-label="Ganti testimoni">${testimoni.slice(0, 6).map((_, i) => `<button data-tq="${i}" aria-label="Testimoni ${i + 1}" aria-current="${i === 0}"></button>`).join('')}</div>` : ''}`
+        : `<p class="tq-empty">Jadilah yang pertama membagikan pengalaman Anda bersama ${esc(c.nama_usaha)}.</p>`}
+        <button class="btn btn-hero-ghost" id="btn-testi">${ic('edit')} Tulis Testimoni</button>
       </div>
-      <div style="text-align:center;margin-top:22px"><button class="btn btn-outline" id="btn-testi">${ic('edit')} Tulis Testimoni</button></div>
-    </section>
-  </div>`;
+      <div class="band-about">
+        <span class="eyebrow">Tentang kami</span>
+        <h2>${esc(c.nama_usaha)}: <span class="hl">cerita</span> di balik lensa.</h2>
+        <p>Bagi kami fotografi lebih dari pekerjaan. Ini cara kami menjaga momen, emosi, dan kebersamaan Anda agar tetap hidup bertahun-tahun kemudian. Mari ciptakan sesuatu yang indah bersama.</p>
+        ${c.alamat || c.jam_buka ? `<ul class="band-info">${c.alamat ? `<li>${ic('pin')}<span>${esc(c.alamat)}</span></li>` : ''}${c.jam_buka ? `<li>${ic('clock')}<span>${esc(c.jam_buka)}</span></li>` : ''}</ul>` : ''}
+        <div class="row">
+          <button class="btn btn-hero" data-scroll="booking">Booking Sesi ${ic('arrow')}</button>
+          ${wa ? `<a class="btn btn-hero-ghost" target="_blank" rel="noopener" href="${esc(wa)}">${ic('wa')} Chat WhatsApp</a>` : ''}
+        </div>
+      </div>
+    </div>
+  </section>`;
 
   renderGallery();
   wireEtalase();
+  startRotator('#hero2', '#hero2 .hs', '#hero2 [data-hs]', 6500);
+  startRotator('#testimoni .tq', '#testimoni .tq-i', '#testimoni [data-tq]', 8000);
   if (soft) window.scrollTo(0, y);
 }
 
