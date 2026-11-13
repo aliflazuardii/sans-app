@@ -122,7 +122,7 @@ async function renderEtalase(soft) {
 
   <div class="wrap">
     <section class="section" id="acara" aria-labelledby="h-acara">
-      <div class="sec-head"><span class="eyebrow center">Jenis acara & pricelist</span><h2 id="h-acara">Pilih Acara Anda</h2><p>Unduh pricelist (PDF) untuk melihat detail layanan. Biaya final disampaikan admin saat konfirmasi booking, sesuai kebutuhan acara Anda.</p></div>
+      <div class="sec-head"><span class="eyebrow center">Jenis acara & pricelist</span><h2 id="h-acara">Pilih Acara Anda</h2><p>Unduh pricelist (PDF) untuk melihat detail layanan.</p></div>
       <div class="acara-grid">
         ${acara.length ? acara.map((a, i) => `
         <article class="acara-card">
